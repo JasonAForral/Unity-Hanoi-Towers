@@ -36,8 +36,8 @@ public class GameManager : MonoBehaviour
     {
         if (null == gameManager)
             gameManager = this;
-        //else if (this != gameManager)
-        //    Destroy(this);
+        else if (this != gameManager)
+            Destroy(this);
 
         ObtainLevel();
 
@@ -45,23 +45,24 @@ public class GameManager : MonoBehaviour
         InitializeTowers();
     }
 
-    private void InitializeDisplay ()
-    {
-        Instantiate(light);
-
-        texts[0].text = "Level: " + level;
-        texts[1].text = "Layers: " + level;
-
-        panels[0].SetActive(true);
-        panels[1].SetActive(true);
-
-    }
-
     protected void ObtainLevel ()
     {
         level = LevelTracker.level;
         difficulty = level + 1;
         Camera.main.transform.localPosition = Vector3.back * (difficulty * 5 + 5);
+    }
+
+    private void InitializeDisplay ()
+    {
+        Instantiate(light);
+
+        texts[0].text = "Level: " + level;
+        texts[1].text = "Layers: " + difficulty;
+
+        panels[0].SetActive(true);
+        panels[1].SetActive(true);
+
+        Time.timeScale = 0f;
     }
 
     protected void InitializeTowers ()
@@ -115,11 +116,19 @@ public class GameManager : MonoBehaviour
 
     protected void Update ()
     {
-        texts[3].text = timer.ToString();
+        if (0f < Time.timeScale)
+            timer += Time.deltaTime;
+        texts[3].text = "Time: " + timer.ToString("F3");
+        if (Input.GetButtonDown("Cancel"))
+            if (ClickState.Victory != clickState)
+                Pause();
+
     }
 
     public void TowerClicked (Transform parentTower)
     {
+        if (0f == timer)
+            Time.timeScale = 1f;
         int towerIndex = 0;
         for (int i = 0; i < towerCount; i++)
         {
@@ -157,6 +166,7 @@ public class GameManager : MonoBehaviour
 
                 incrementClicks();
                 CheckVictory();
+                
             }
 
             break;
@@ -171,6 +181,7 @@ public class GameManager : MonoBehaviour
         if (towersContents[2].Count == difficulty)
         {
             panels[2].SetActive(true);
+            Time.timeScale = 0f;
             clickState = ClickState.Victory;
         }
     }
@@ -180,5 +191,22 @@ public class GameManager : MonoBehaviour
         Pickup,
         Drop,
         Victory
+    }
+
+    public bool paused;
+
+    void Pause ()
+    {
+        paused = !paused;
+        if (paused)
+        {
+            panels[3].SetActive(true);
+            Time.timeScale = 0f;
+        }
+        else
+        {
+            Time.timeScale = 1f;
+            panels[3].SetActive(false);
+        }
     }
 }
