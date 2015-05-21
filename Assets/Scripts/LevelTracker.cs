@@ -15,9 +15,9 @@ public class LevelTracker : MonoBehaviour
         if (null == levelTracker)
             levelTracker = this;
         else if (this != levelTracker)
-            Destroy(this);
+            Destroy(gameObject);
 
-        DontDestroyOnLoad(this);
+        DontDestroyOnLoad(gameObject);
     }
 
     public static void Victory ()

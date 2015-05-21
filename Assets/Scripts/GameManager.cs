@@ -22,6 +22,10 @@ public class GameManager : MonoBehaviour
     protected Transform table;
     protected Transform[] towers = new Transform[towerCount];
     protected Stack<GameObject>[] towersContents = new Stack<GameObject>[towerCount];
+
+    protected AudioSource audioSource;
+    [SerializeField]
+    protected AudioClip[] sounds;
     
     protected ClickState clickState;
     protected GameObject movingBlock;
@@ -31,7 +35,17 @@ public class GameManager : MonoBehaviour
     protected bool pickUp;
     protected bool paused;
 
-    [SerializeField]
+    protected int clicks;
+
+    protected float timer;
+
+    protected enum ClickState
+    {
+        Pickup,
+        Drop,
+        Victory
+    }
+
     protected float blockShapeFactor = 1f;
 
     protected void Awake ()
@@ -39,7 +53,9 @@ public class GameManager : MonoBehaviour
         if (null == gameManager)
             gameManager = this;
         else if (this != gameManager)
-            Destroy(this);
+            Destroy(gameObject);
+
+        audioSource = GetComponent<AudioSource>();
 
         ObtainLevel();
 
@@ -98,8 +114,6 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    protected int clicks;
-
     protected void incrementClicks ()
     {
         if (ClickState.Victory != clickState)
@@ -114,18 +128,17 @@ public class GameManager : MonoBehaviour
         texts[2].text = "Clicks: " + clicks;
     }
 
-    protected float timer;
-
+    
     protected void Update ()
     {
         if (0f < Time.timeScale)
             timer += Time.deltaTime;
         texts[3].text = "Time: " + timer.ToString("F3");
-        if (Input.GetButtonDown("Fire2"))
+
+        if (Input.GetButtonDown("Fire2") || Input.GetButtonDown("Cancel"))
             if (ClickState.Victory != clickState)
                 Pause();
-
-        //
+        
         if (Input.GetButtonDown("Fire3"))
             Debug.Log("prompt restart");
     }
@@ -147,9 +160,11 @@ public class GameManager : MonoBehaviour
         switch (clickState)
         {
         case ClickState.Pickup:
+
             if (0 < towersContents[towerIndex].Count)
                 movingBlock = towersContents[towerIndex].Peek();
             else break;
+            audioSource.PlayOneShot(sounds[0]);
             movingBlockTransform = movingBlock.transform;
             movingBlock.transform.Translate(Vector3.up);
             fromTower = towerIndex;
@@ -162,6 +177,8 @@ public class GameManager : MonoBehaviour
 
             // successful Drop
             {
+                audioSource.PlayOneShot(sounds[1]);
+
                 movingBlock = towersContents[fromTower].Pop();
                 movingBlockTransform = movingBlock.transform;
                 movingBlock.transform.SetParent(towers[towerIndex], false);
@@ -172,7 +189,11 @@ public class GameManager : MonoBehaviour
 
                 incrementClicks();
                 CheckVictory();
-                
+
+            }
+            else
+            {
+                audioSource.PlayOneShot(sounds[2]);
             }
 
             break;
@@ -189,6 +210,8 @@ public class GameManager : MonoBehaviour
             panels[2].SetActive(true);
             Time.timeScale = 0f;
             clickState = ClickState.Victory;
+            audioSource.PlayOneShot(sounds[3]);
+
         }
     }
 
@@ -199,19 +222,15 @@ public class GameManager : MonoBehaviour
         {
             panels[3].SetActive(true);
             Time.timeScale = 0f;
+            PersistantBGM.instance.audioSource.Pause();
         }
         else
         {
             Time.timeScale = 1f;
             panels[3].SetActive(false);
+            PersistantBGM.instance.audioSource.UnPause();
         }
     }
 
-    protected enum ClickState
-    {
-        Pickup,
-        Drop,
-        Victory
-    }
 
 }
