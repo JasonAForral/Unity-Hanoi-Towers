@@ -8,6 +8,7 @@ public class GameManager : MonoBehaviour
     protected const int towerCount = 3;
     
     public static GameManager gameManager;
+    static int level =1;
 
     public GameObject blockTemplate;
     public GameObject towerTemplate;
@@ -17,7 +18,7 @@ public class GameManager : MonoBehaviour
     public Text[] texts;
 
     protected int difficulty;
-    protected int level;
+    //protected int level;
     
     protected Transform table;
     protected Transform[] towers = new Transform[towerCount];
@@ -65,14 +66,14 @@ public class GameManager : MonoBehaviour
 
     protected void ObtainLevel ()
     {
-        level = LevelTracker.level;
+        //level = LevelTracker.level;
         difficulty = level + 1;
         Camera.main.transform.localPosition = Vector3.back * (difficulty * 4+5);
     }
 
     private void InitializeDisplay ()
     {
-        Instantiate(light);
+        //Instantiate(light);
 
         texts[0].text = "Level: " + level;
         texts[1].text = "Layers: " + difficulty;
@@ -97,6 +98,8 @@ public class GameManager : MonoBehaviour
             Transform peg = towers[i].GetChild(1);
             peg.localPosition = Vector3.up * (float)difficulty * 0.5f;
             peg.localScale = new Vector3(0.5f, (difficulty + 1f) * blockShapeFactor, 0.5f);
+
+            towers[i].GetComponent<TowerIdentifier>().SetIndex(i);
             
             towers[i].parent = table;
             towersContents[i] = new Stack<GameObject>();
@@ -128,7 +131,7 @@ public class GameManager : MonoBehaviour
         texts[2].text = "Clicks: " + clicks;
     }
 
-    
+
     protected void Update ()
     {
         if (0f < Time.timeScale)
@@ -138,25 +141,21 @@ public class GameManager : MonoBehaviour
         if (Input.GetButtonDown("Fire2") || Input.GetButtonDown("Cancel"))
             if (ClickState.Victory != clickState)
                 Pause();
-        
+
         if (Input.GetButtonDown("Fire3"))
             Debug.Log("prompt restart");
+        
+        //if (Input.GetButtonDown("Fire1"))
+        //    if (ClickState.Victory == clickState)
+        //        LevelTracker.Victory();
     }
 
-    public void TowerClicked (Transform parentTower)
+    public void TowerClicked (int towerIndex)
     {
         if (paused)
             return;
 
-        int towerIndex = 0;
-        for (int i = 0; i < towerCount; i++)
-        {
-            if (towers[i] == parentTower)
-            {
-                towerIndex = i;
-                break;
-            }
-        }
+
         switch (clickState)
         {
         case ClickState.Pickup:
@@ -198,7 +197,9 @@ public class GameManager : MonoBehaviour
 
             break;
         case ClickState.Victory:
-            LevelTracker.Victory();
+            //LevelTracker.Victory();
+            level++;
+            Application.LoadLevel(Application.loadedLevel);
             break;
         }
     }

@@ -23,6 +23,6 @@ public class LevelTracker : MonoBehaviour
     public static void Victory ()
     {
         _level++;
-        Application.LoadLevel(0);
+        Application.LoadLevel(Application.loadedLevel);
     }
 }
