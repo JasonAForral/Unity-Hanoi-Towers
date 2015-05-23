@@ -12,13 +12,12 @@ public class GameManager : MonoBehaviour
 
     public GameObject blockTemplate;
     public GameObject towerTemplate;
-    public GameObject light;
+    public GameObject lightPrefab;
 
     public GameObject[] panels;
     public Text[] texts;
 
     protected int difficulty;
-    //protected int level;
     
     protected Transform table;
     protected Transform[] towers = new Transform[towerCount];
@@ -38,7 +37,9 @@ public class GameManager : MonoBehaviour
 
     protected int clicks;
 
-    protected float timer;
+    protected int min;
+    protected int sec;
+    protected float mili;
 
     protected enum ClickState
     {
@@ -66,14 +67,13 @@ public class GameManager : MonoBehaviour
 
     protected void ObtainLevel ()
     {
-        //level = LevelTracker.level;
         difficulty = level + 1;
         Camera.main.transform.localPosition = Vector3.back * (difficulty * 4+5);
     }
 
     private void InitializeDisplay ()
     {
-        //Instantiate(light);
+        Instantiate(lightPrefab);
 
         texts[0].text = "Level: " + level;
         texts[1].text = "Layers: " + difficulty;
@@ -99,8 +99,6 @@ public class GameManager : MonoBehaviour
             peg.localPosition = Vector3.up * (float)difficulty * 0.5f;
             peg.localScale = new Vector3(0.5f, (difficulty + 1f) * blockShapeFactor, 0.5f);
 
-            towers[i].GetComponent<TowerIdentifier>().SetIndex(i);
-            
             towers[i].parent = table;
             towersContents[i] = new Stack<GameObject>();
             
@@ -134,9 +132,14 @@ public class GameManager : MonoBehaviour
 
     protected void Update ()
     {
+
         if (0f < Time.timeScale)
-            timer += Time.deltaTime;
-        texts[3].text = "Time: " + timer.ToString("F3");
+        {
+            min = (int)Time.timeSinceLevelLoad / 60;
+            sec = (int)Time.timeSinceLevelLoad % 60 / 10;
+            mili = Time.timeSinceLevelLoad % 10;
+        }
+            texts[3].text = min.ToString("D2") + ":" + sec.ToString("D1") + mili.ToString("F3");
 
         if (Input.GetButtonDown("Fire2") || Input.GetButtonDown("Cancel"))
             if (ClickState.Victory != clickState)
@@ -150,16 +153,31 @@ public class GameManager : MonoBehaviour
         //        LevelTracker.Victory();
     }
 
-    public void TowerClicked (int towerIndex)
+    public void TowerClicked (Transform tower)
     {
         if (paused)
             return;
+        int towerIndex = 4;
+        for (int i = 0; i < towerCount; i++)
+        {
+            if (tower == towers[i])
+            {
+                towerIndex = i;
+                break;
+            }
+        }
+
+        if (towerIndex >= towerCount)
+        {
+            Debug.Log("need new handle");
+            return;
+        }
 
 
         switch (clickState)
         {
         case ClickState.Pickup:
-
+            
             if (0 < towersContents[towerIndex].Count)
                 movingBlock = towersContents[towerIndex].Peek();
             else break;
@@ -171,6 +189,8 @@ public class GameManager : MonoBehaviour
             incrementClicks();
             break;
         case ClickState.Drop:
+            
+
             // check if block can be dropped
             if (0 == towersContents[towerIndex].Count || movingBlockTransform.localScale.x <= towersContents[towerIndex].Peek().transform.localScale.x)
 
