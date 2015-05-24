@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class GameManager : MonoBehaviour
 {
     protected const int towerCount = 3;
-    
+
     public static GameManager gameManager;
     static int level =1;
 
@@ -18,7 +18,7 @@ public class GameManager : MonoBehaviour
     public Text[] texts;
 
     protected int difficulty;
-    
+
     protected Transform table;
     protected Transform[] towers = new Transform[towerCount];
     protected Stack<GameObject>[] towersContents = new Stack<GameObject>[towerCount];
@@ -26,8 +26,8 @@ public class GameManager : MonoBehaviour
     protected AudioSource audioSource;
     [SerializeField]
     protected AudioClip[] sounds;
-    
-    protected ClickState clickState;
+
+    protected InputState inputState;
     protected GameObject movingBlock;
     protected Transform movingBlockTransform;
     protected int fromTower;
@@ -35,13 +35,17 @@ public class GameManager : MonoBehaviour
     protected bool pickUp;
     protected bool paused;
 
-    protected int clicks;
+    protected int moves;
 
     protected int min;
     protected int sec;
     protected float mili;
 
-    protected enum ClickState
+    protected bool toggleMusic = true;
+    protected bool toggleSounds = true;
+
+    ScreenOrientation orientation;
+    protected enum InputState
     {
         Pickup,
         Drop,
@@ -68,12 +72,31 @@ public class GameManager : MonoBehaviour
     protected void ObtainLevel ()
     {
         difficulty = level + 1;
-        Camera.main.transform.localPosition = Vector3.back * (difficulty * 4+5);
+        MoveCamera();
+
+    }
+
+    void MoveCamera ()
+    {
+        float aspecter = (float)Screen.height / (float)Screen.width * 2f;
+        if (aspecter < 1f)
+            aspecter = 1f;
+        Camera.main.transform.localPosition = Vector3.back * (level * 2 + 4);
+        orientation = Screen.orientation;
+
+    }
+
+
+
+    public void ToggleSounds ()
+    {
+        toggleSounds = !toggleSounds;
+        audioSource.mute = !toggleSounds;
     }
 
     private void InitializeDisplay ()
     {
-        Instantiate(lightPrefab);
+        //Instantiate(lightPrefab);
 
         texts[0].text = "Level: " + level;
         texts[1].text = "Layers: " + difficulty;
@@ -87,69 +110,80 @@ public class GameManager : MonoBehaviour
     protected void InitializeTowers ()
     {
         table = new GameObject("Table").transform;
-        for (int i = 0; i < towerCount; i++)
-        {
+        for (int i = 0; i < towerCount; i++) {
             towers[i] = (Instantiate(towerTemplate, Vector3.right * (i - 1f) * (difficulty + 2f), Quaternion.identity) as GameObject).transform;
 
             towers[i].gameObject.name = "Tower " + i;
 
-            towers[i].GetChild(0).localScale = new Vector3(difficulty + 1f, blockShapeFactor, difficulty + 1f);
-            
+            towers[i].GetChild(0).localScale = new Vector3(difficulty + 1f, 1f, difficulty + 1f);
+
             Transform peg = towers[i].GetChild(1);
-            peg.localPosition = Vector3.up * (float)difficulty * 0.5f;
-            peg.localScale = new Vector3(0.5f, (difficulty + 1f) * blockShapeFactor, 0.5f);
+            peg.localPosition = Vector3.up * (float)difficulty*0.5f;
+            peg.localScale = new Vector3(0.5f, difficulty+1f , 0.5f);
+
+            Transform hitBox = towers[i].GetChild(2);
+            //hitBox.localPosition = Vector3.up * (float)difficulty * 0.5f;
+            hitBox.localScale = new Vector3(difficulty, (difficulty + 1f) * 2, difficulty);
 
             towers[i].parent = table;
             towersContents[i] = new Stack<GameObject>();
-            
+
         }
 
 
-        for (int i = 0; i < difficulty; i++)
-        {
+        for (int i = 0; i < difficulty; i++) {
             GameObject newBlock = Instantiate(blockTemplate, towers[0].transform.position + Vector3.up * i, Quaternion.identity) as GameObject;
             newBlock.transform.parent = towers[0];
             float blockScale = difficulty - towersContents[0].Count;
-            newBlock.transform.localScale = new Vector3(blockScale, blockShapeFactor, blockScale);
+            newBlock.transform.localScale = new Vector3(blockScale, 1f, blockScale);
             towersContents[0].Push(newBlock);
         }
     }
 
-    protected void incrementClicks ()
+    protected void incrementMoves ()
     {
-        if (ClickState.Victory != clickState)
-        {
-            clicks++;
+        if (InputState.Victory != inputState) {
+            moves++;
             updateClickDisplay();
         }
     }
 
     protected void updateClickDisplay ()
     {
-        texts[2].text = "Clicks: " + clicks;
+        texts[2].text = "Moves: " + moves;
     }
-
 
     protected void Update ()
     {
 
-        if (0f < Time.timeScale)
-        {
+        if (orientation != Screen.orientation)
+            MoveCamera();
+
+        //if (Input.GetKeyDown(KeyCode.Q))
+        //{
+        //    panels[2].SetActive(true);
+        //    Time.timeScale = 0f;
+        //    inputState = InputState.Victory;
+        //    audioSource.PlayOneShot(sounds[3]);
+        //}
+
+
+        if (0f < Time.timeScale) {
             min = (int)Time.timeSinceLevelLoad / 60;
             sec = (int)Time.timeSinceLevelLoad % 60 / 10;
             mili = Time.timeSinceLevelLoad % 10;
         }
-            texts[3].text = min.ToString("D2") + ":" + sec.ToString("D1") + mili.ToString("F3");
+        texts[3].text = min.ToString("D2") + ":" + sec.ToString("D1") + mili.ToString("F3");
 
         if (Input.GetButtonDown("Fire2") || Input.GetButtonDown("Cancel"))
-            if (ClickState.Victory != clickState)
+            if (InputState.Victory != inputState)
                 Pause();
 
         if (Input.GetButtonDown("Fire3"))
             Debug.Log("prompt restart");
-        
+
         //if (Input.GetButtonDown("Fire1"))
-        //    if (ClickState.Victory == clickState)
+        //    if (InputState.Victory == inputState)
         //        LevelTracker.Victory();
     }
 
@@ -158,79 +192,80 @@ public class GameManager : MonoBehaviour
         if (paused)
             return;
         int towerIndex = 4;
-        for (int i = 0; i < towerCount; i++)
-        {
-            if (tower == towers[i])
-            {
+        for (int i = 0; i < towerCount; i++) {
+            if (tower == towers[i]) {
                 towerIndex = i;
                 break;
             }
         }
 
-        if (towerIndex >= towerCount)
-        {
+        if (towerIndex >= towerCount) {
             Debug.Log("need new handle");
             return;
         }
 
 
-        switch (clickState)
-        {
-        case ClickState.Pickup:
-            
-            if (0 < towersContents[towerIndex].Count)
-                movingBlock = towersContents[towerIndex].Peek();
-            else break;
-            audioSource.PlayOneShot(sounds[0]);
-            movingBlockTransform = movingBlock.transform;
-            movingBlock.transform.Translate(Vector3.up);
-            fromTower = towerIndex;
-            clickState = ClickState.Drop;
-            incrementClicks();
-            break;
-        case ClickState.Drop:
-            
+        switch (inputState) {
+            case InputState.Pickup:
 
-            // check if block can be dropped
-            if (0 == towersContents[towerIndex].Count || movingBlockTransform.localScale.x <= towersContents[towerIndex].Peek().transform.localScale.x)
-
-            // successful Drop
-            {
-                audioSource.PlayOneShot(sounds[1]);
-
-                movingBlock = towersContents[fromTower].Pop();
+                if (0 < towersContents[towerIndex].Count)
+                    movingBlock = towersContents[towerIndex].Peek();
+                else
+                    break;
+                audioSource.PlayOneShot(sounds[0]);
                 movingBlockTransform = movingBlock.transform;
-                movingBlock.transform.SetParent(towers[towerIndex], false);
-                movingBlock.transform.localPosition = Vector3.up * towersContents[towerIndex].Count;
+                movingBlock.transform.Translate(Vector3.up);
+                fromTower = towerIndex;
+                inputState = InputState.Drop;
+                incrementMoves();
+                break;
+            case InputState.Drop:
 
-                towersContents[towerIndex].Push(movingBlock);
-                clickState = ClickState.Pickup;
 
-                incrementClicks();
-                CheckVictory();
+                // check if block can be dropped
+                if (0 == towersContents[towerIndex].Count || movingBlockTransform.localScale.x <= towersContents[towerIndex].Peek().transform.localScale.x)
 
-            }
-            else
+                // successful Drop
             {
-                audioSource.PlayOneShot(sounds[2]);
-            }
+                    audioSource.PlayOneShot(sounds[1]);
 
-            break;
-        case ClickState.Victory:
-            //LevelTracker.Victory();
-            level++;
-            Application.LoadLevel(Application.loadedLevel);
-            break;
+                    movingBlock = towersContents[fromTower].Pop();
+                    movingBlockTransform = movingBlock.transform;
+                    movingBlock.transform.SetParent(towers[towerIndex], false);
+                    movingBlock.transform.localPosition = Vector3.up * towersContents[towerIndex].Count;
+
+                    towersContents[towerIndex].Push(movingBlock);
+                    inputState = InputState.Pickup;
+
+                    incrementMoves();
+                    CheckVictory();
+
+                } else {
+                    audioSource.PlayOneShot(sounds[2]);
+                }
+
+                break;
+            case InputState.Victory:
+                //LevelTracker.Victory();
+                NextLevel();
+                break;
         }
     }
 
+    public void NextLevel ()
+    {
+        level++;
+        Application.LoadLevel(Application.loadedLevel);
+    }
+
+    
+
     protected void CheckVictory ()
     {
-        if (towersContents[2].Count == difficulty)
-        {
+        if (towersContents[2].Count == difficulty) {
             panels[2].SetActive(true);
             Time.timeScale = 0f;
-            clickState = ClickState.Victory;
+            inputState = InputState.Victory;
             audioSource.PlayOneShot(sounds[3]);
 
         }
@@ -239,17 +274,25 @@ public class GameManager : MonoBehaviour
     void Pause ()
     {
         paused = !paused;
-        if (paused)
-        {
+        if (paused) {
             panels[3].SetActive(true);
             Time.timeScale = 0f;
-            PersistantBGM.instance.audioSource.Pause();
-        }
-        else
-        {
+            PersistentBGM.persistentBGM.audioSource.Pause();
+        } else {
             Time.timeScale = 1f;
             panels[3].SetActive(false);
-            PersistantBGM.instance.audioSource.UnPause();
+            PersistentBGM.persistentBGM.audioSource.UnPause();
+        }
+    }
+
+    public void ToggleMusic ()
+    {
+        toggleMusic = !toggleMusic;
+
+        if (toggleMusic) {
+            PersistentBGM.persistentBGM.audioSource.Play();
+        } else {
+            PersistentBGM.persistentBGM.audioSource.Stop();
         }
     }
 
