@@ -24,6 +24,7 @@ public class GameManager : MonoBehaviour
     protected Stack<GameObject>[] towersContents = new Stack<GameObject>[towerCount];
 
     protected AudioSource audioSource;
+    protected Transform mainCamera;
     [SerializeField]
     protected AudioClip[] sounds;
 
@@ -44,6 +45,12 @@ public class GameManager : MonoBehaviour
     protected bool toggleMusic = true;
     protected bool toggleSounds = true;
 
+    Resolution screenRes;
+    Vector2 screenSize;
+
+    public Text debug;
+
+
     ScreenOrientation orientation;
     protected enum InputState
     {
@@ -62,6 +69,7 @@ public class GameManager : MonoBehaviour
             Destroy(gameObject);
 
         audioSource = GetComponent<AudioSource>();
+        mainCamera = Camera.main.transform;
 
         ObtainLevel();
 
@@ -79,14 +87,18 @@ public class GameManager : MonoBehaviour
     void MoveCamera ()
     {
         float aspecter = (float)Screen.height / (float)Screen.width * 2f;
-        if (aspecter < 1f)
-            aspecter = 1f;
-        Camera.main.transform.localPosition = Vector3.back * (level * 2 + 4);
+        //if (aspecter < 1f)
+        //    aspecter = 1f;
+        Camera.main.transform.localPosition = Vector3.back * (level * 2 + 4) * aspecter;
         orientation = Screen.orientation;
+
+        debug.text = "Resolution: " + Screen.width + " x " + Screen.height;
+        screenSize.Set(Screen.width, Screen.height);
+        Resolution screenRes = Screen.resolutions[0];
 
     }
 
-
+    
 
     public void ToggleSounds ()
     {
@@ -156,7 +168,6 @@ public class GameManager : MonoBehaviour
     protected void Update ()
     {
 
-        if (orientation != Screen.orientation)
             MoveCamera();
 
         //if (Input.GetKeyDown(KeyCode.Q))
