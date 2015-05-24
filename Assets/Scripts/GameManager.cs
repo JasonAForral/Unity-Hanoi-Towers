@@ -89,7 +89,7 @@ public class GameManager : MonoBehaviour
         float aspecter = (float)Screen.height / (float)Screen.width * 2f;
         //if (aspecter < 1f)
         //    aspecter = 1f;
-        Camera.main.transform.localPosition = Vector3.back * (level * 2 + 4) * aspecter;
+        mainCamera.localPosition = Vector3.back * (level * 2 + 4) * aspecter;
         orientation = Screen.orientation;
 
         debug.text = "Resolution: " + Screen.width + " x " + Screen.height;
