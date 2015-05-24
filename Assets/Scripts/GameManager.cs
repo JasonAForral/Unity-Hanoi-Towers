@@ -45,21 +45,18 @@ public class GameManager : MonoBehaviour
     protected bool toggleMusic = true;
     protected bool toggleSounds = true;
 
-    Resolution screenRes;
-    Vector2 screenSize;
+    //Resolution screenRes;
+    //Vector2 screenSize;
 
-    public Text debug;
+    //public Text debug;
 
-
-    ScreenOrientation orientation;
+    //ScreenOrientation orientation;
     protected enum InputState
     {
         Pickup,
         Drop,
         Victory
     }
-
-    protected float blockShapeFactor = 1f;
 
     protected void Awake ()
     {
@@ -86,16 +83,15 @@ public class GameManager : MonoBehaviour
 
     void MoveCamera ()
     {
-        float aspecter = (float)Screen.height / (float)Screen.width * 2f;
+        //float aspecter = (float)Screen.height / (float)Screen.width * 2f;
         //if (aspecter < 1f)
         //    aspecter = 1f;
-        mainCamera.localPosition = Vector3.back * (level * 2 + 4) * aspecter;
-        orientation = Screen.orientation;
+        mainCamera.localPosition = Vector3.back * (level * 2f + 4f);
+        //orientation = Screen.orientation;
 
-        debug.text = "Resolution: " + Screen.width + " x " + Screen.height;
-        screenSize.Set(Screen.width, Screen.height);
-        Resolution screenRes = Screen.resolutions[0];
-
+        //debug.text = "Resolution: " + Screen.width + " x " + Screen.height;
+        //screenSize.Set(Screen.width, Screen.height);
+        //Resolution screenRes = Screen.resolutions[0];
     }
 
     
@@ -134,7 +130,6 @@ public class GameManager : MonoBehaviour
             peg.localScale = new Vector3(0.5f, difficulty+1f , 0.5f);
 
             Transform hitBox = towers[i].GetChild(2);
-            //hitBox.localPosition = Vector3.up * (float)difficulty * 0.5f;
             hitBox.localScale = new Vector3(difficulty, (difficulty + 1f) * 2, difficulty);
 
             towers[i].parent = table;
